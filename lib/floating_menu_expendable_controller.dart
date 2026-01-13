@@ -1,4 +1,4 @@
-part of 'floating.dart';
+part of 'floating_menu_expendable.dart';
 
 enum FloatingMenuPanelPhysicalSide { left, right, top, bottom }
 

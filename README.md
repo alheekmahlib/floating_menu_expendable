@@ -1,48 +1,98 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+## Floating Menu Expendable
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+A draggable floating handle that opens a customizable panel (side or vertical).
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+Designed for:
 
-This package currently ships with a simple `Calculator` API (template starter).
+- Quick actions / shortcuts
+- Floating toolbars
+- Chat / support / menu buttons
 
-If your goal is an expandable floating menu widget, tell me what API you want
-(or share a screenshot), and I can implement the real widget + update the docs.
+### Features
 
-## Features
+- Draggable and snaps to the nearest screen edge
+- Two open modes:
+	- `FloatingMenuPanelOpenMode.side`: panel opens horizontally next to the handle
+	- `FloatingMenuPanelOpenMode.vertical`: panel opens below the handle (or above if near bottom)
+- Background barrier with blur + color, dismissible on tap
+- UI customization via `FloatingMenuPanelStyle`
+- `FloatingMenuPanelController` for open/close/toggle and side tracking
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+### Preview
 
-## Getting started
+![Preview](doc/preview.gif)
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+### Installation
 
-## Usage
+Add the package to your `pubspec.yaml`.
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-Quick example:
+### Import
 
 ```dart
 import 'package:floating_menu_expendable/floating_menu_expendable.dart';
-
-final calculator = Calculator();
-final value = calculator.addOne(41);
 ```
 
-For a runnable Flutter app example, see the `example/` folder.
+### Quick usage
 
-## Additional information
+```dart
+final controller = FloatingMenuPanelController();
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+Stack(
+	children: [
+		FloatingMenuPanel(
+			controller: controller,
+			panelWidth: 320,
+			panelHeight: 240,
+			handleChild: const Icon(Icons.menu),
+			panelChild: const ColoredBox(color: Colors.white),
+		),
+	],
+)
+```
+
+### Customize the UI (Style)
+
+Use `FloatingMenuPanelStyle` to customize blur, barrier color, panel radius, and handle ink effects.
+
+```dart
+FloatingMenuPanel(
+	controller: controller,
+	panelWidth: 320,
+	panelHeight: 240,
+	handleChild: const Icon(Icons.menu),
+	panelChild: const ColoredBox(color: Colors.white),
+	style: const FloatingMenuPanelStyle(
+		// Background barrier
+		showBarrierWhenOpen: true,
+		barrierDismissible: true,
+		barrierColor: Color(0x66000000),
+		barrierBlurSigmaX: 10,
+		barrierBlurSigmaY: 10,
+
+		// Panel
+		panelBorderRadius: BorderRadius.all(Radius.circular(18)),
+	),
+)
+```
+
+### Controller
+
+```dart
+controller.open();
+controller.close();
+controller.toggle();
+```
+
+You can also listen to where the handle is docked:
+
+- `controller.physicalSide` (left / right)
+- `controller.verticalSide` (top / bottom) when using vertical mode
+
+### Example app
+
+See the runnable Flutter demo in the `example/` folder.
+
+### Notes
+
+- The widget is intended to be used inside a `Stack`.
+- Provide your own `panelChild` and `handleChild` to match your app UI.

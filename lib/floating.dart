@@ -1,4 +1,7 @@
-import 'package:flutter/material.dart';
+/// Backwards-compatible export.
+///
+/// Prefer importing:
+/// `package:floating_menu_expendable/floating_menu_expendable.dart`
+library;
 
-part 'floating_menu_expendable.dart';
-part 'floating_menu_expendable_controller.dart';
+export 'floating_menu_expendable.dart';

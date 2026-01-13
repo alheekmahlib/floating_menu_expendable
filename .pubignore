@@ -1,0 +1,24 @@
+# Files and folders to exclude from the published package.
+# See: https://dart.dev/tools/pub/publishing#what-files-are-published
+
+# Tooling / IDE
+.dart_tool/
+.idea/
+.vscode/
+*.iml
+
+# Build outputs
+build/
+example/build/
+example/.dart_tool/
+example/android/.gradle/
+example/ios/Flutter/ephemeral/
+example/macos/Flutter/ephemeral/
+
+# Pub lockfiles (packages should not publish lockfiles)
+pubspec.lock
+example/pubspec.lock
+
+# Misc
+*.log
+.DS_Store

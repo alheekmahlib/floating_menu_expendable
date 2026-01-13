@@ -1,7 +1,16 @@
 name: floating_menu_expendable
-description: "A new Flutter package project."
-version: 0.0.1
-homepage:
+description: "A draggable floating handle that opens a customizable panel (side or vertical)."
+version: 0.1.0
+homepage: https://github.com/hawazenmahmood/floating_menu_expendable
+repository: https://github.com/hawazenmahmood/floating_menu_expendable
+issue_tracker: https://github.com/hawazenmahmood/floating_menu_expendable/issues
+
+topics:
+  - overlay
+  - menu
+  - draggable
+  - floating-action
+  - ui
 
 environment:
   sdk: ^3.10.4

@@ -1,4 +1,11 @@
-part of 'floating.dart';
+library;
+
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+
+part 'floating_menu_expendable_controller.dart';
+part 'floating_menu_expendable_style.dart';
 
 enum FloatingMenuPanelOpenMode {
   /// يفتح اللوحة من الجانب (يمين/يسار) حسب الدوك و RTL/LTR.
@@ -12,6 +19,9 @@ enum _DockSideDirectional { start, end }
 
 class FloatingMenuPanel extends StatefulWidget {
   final FloatingMenuPanelController controller;
+
+  /// Visual customization for the panel/handle/barrier.
+  final FloatingMenuPanelStyle style;
 
   /// العرض النهائي للمحتوى عند الفتح.
   final double panelWidth;
@@ -52,6 +62,7 @@ class FloatingMenuPanel extends StatefulWidget {
     required this.panelHeight,
     required this.panelChild,
     required this.handleChild,
+    this.style = const FloatingMenuPanelStyle(),
     this.handleWidth = 52,
     this.handleHeight = 52,
     this.screenPadding = const EdgeInsetsDirectional.only(
@@ -316,10 +327,16 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
       width: widget.handleWidth,
       height: widget.handleHeight,
       child: Material(
-        color: Colors.transparent,
+        color: widget.style.handleMaterialColor,
         child: InkWell(
           onTap: widget.controller.toggle,
-          // customBorder: const CircleBorder(),
+          customBorder: widget.style.handleInkCustomBorder,
+          borderRadius: widget.style.handleInkCustomBorder == null
+              ? widget.style.handleInkBorderRadius
+              : null,
+          splashColor: widget.style.handleSplashColor,
+          highlightColor: widget.style.handleHighlightColor,
+          overlayColor: widget.style.handleOverlayColor,
           child: Center(child: widget.handleChild),
         ),
       ),
@@ -327,249 +344,282 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
   }
 
   Widget _buildPanelContainer(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-      child: widget.panelChild,
+    return ClipRRect(
+      borderRadius: widget.style.panelBorderRadius,
+      clipBehavior: widget.style.panelClipBehavior,
+      child: DecoratedBox(
+        decoration: widget.style.panelDecoration ?? const BoxDecoration(),
+        child: widget.panelChild,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isRtl = Directionality.of(context) == TextDirection.rtl;
-
-        final padding = _resolvedPadding(context);
-        final maxInsideWidth =
-            (constraints.maxWidth - padding.left - padding.right).clamp(
-              0.0,
-              double.infinity,
-            );
-        final maxInsideHeight =
-            (constraints.maxHeight - padding.top - padding.bottom).clamp(
-              0.0,
-              double.infinity,
-            );
-
-        final maxPanelWidth = widget.openMode == FloatingMenuPanelOpenMode.side
-            ? (maxInsideWidth - widget.handleWidth).clamp(0.0, double.infinity)
-            : maxInsideWidth;
-        final maxPanelHeight =
-            widget.openMode == FloatingMenuPanelOpenMode.vertical
-            ? (maxInsideHeight - widget.handleHeight).clamp(
-                0.0,
-                double.infinity,
-              )
-            : maxInsideHeight;
-
-        _layoutPanelWidth = widget.panelWidth.clamp(0.0, maxPanelWidth);
-        _layoutPanelHeight = widget.panelHeight.clamp(0.0, maxPanelHeight);
-
-        final isOpen = widget.controller.isOpen;
-        final t = _openCurve.value;
-
-        // عند الفتح العمودي، نقرر هل يفتح للأعلى أو للأسفل.
-        // مهم: نجعل _position.dy هو موضع المقبض (anchor) دائمًا.
-        // وعند الفتح للأعلى نحسب top ديناميكيًا بـ t حتى لا يتحرك المقبض أثناء الفتح/الإغلاق.
-        if (widget.openMode == FloatingMenuPanelOpenMode.vertical &&
-            isOpen != _lastIsOpen) {
-          if (isOpen) {
-            final handleCenterY = _position.dy + (widget.handleHeight / 2);
-            _verticalOpensUp = handleCenterY > (constraints.maxHeight / 2);
-          }
-          _lastIsOpen = isOpen;
-        }
-
-        if (_isDocked && !_isDragging) {
-          // أبقِ اللوحة ملتصقة بالحافة (start/end) حتى لو تغيّر عرضها عند الفتح/الإغلاق.
-          final width = widget.openMode == FloatingMenuPanelOpenMode.vertical
-              ? widget.handleWidth
-              : _currentWidth();
-          final leftX = padding.left;
-          final rightX = (constraints.maxWidth - width - padding.right).clamp(
-            leftX,
-            double.infinity,
-          );
-
-          final dockOnPhysicalLeft = isRtl
-              ? (_dockSide == _DockSideDirectional.end)
-              : (_dockSide == _DockSideDirectional.start);
-
-          _position = Offset(dockOnPhysicalLeft ? leftX : rightX, _position.dy);
-        }
-
-        _position = _clampPosition(
-          context: context,
-          constraints: constraints,
-          position: _position,
-        );
-
-        final handle = _buildHandle(context);
-
-        final panel = (t == 0)
-            ? const SizedBox.shrink()
-            : ClipRect(
-                child: SizedBox(
-                  key: const Key('floating_menu_panel_panel'),
-                  width: widget.openMode == FloatingMenuPanelOpenMode.side
-                      ? (_layoutPanelWidth * t)
-                      : _layoutPanelWidth,
-                  height: widget.openMode == FloatingMenuPanelOpenMode.vertical
-                      ? (_layoutPanelHeight * t)
-                      : _layoutPanelHeight,
-                  child: _buildPanelContainer(context),
+    return Stack(
+      children: [
+        // Barrier ضبابي يغطي كامل الشاشة
+        if (widget.controller.isOpen && widget.style.showBarrierWhenOpen)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: widget.style.barrierDismissible
+                  ? () => widget.controller.close()
+                  : null,
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: widget.style.barrierBlurSigmaX,
+                  sigmaY: widget.style.barrierBlurSigmaY,
                 ),
-              );
-
-        final dockOnPhysicalLeft = isRtl
-            ? (_dockSide == _DockSideDirectional.end)
-            : (_dockSide == _DockSideDirectional.start);
-
-        final containerWidth = _currentWidth();
-
-        final animatedTop =
-            (widget.openMode == FloatingMenuPanelOpenMode.vertical &&
-                _verticalOpensUp)
-            ? (_position.dy - (_layoutPanelHeight * t))
-            : _position.dy;
-
-        // في الوضع العمودي: _position.dx يمثل موضع المقبض، ونحرّك left للكونتينر
-        // عند الدوك يمينًا حتى يبقى المقبض ثابتًا أثناء تغيّر عرض الكونتينر.
-        final animatedLeft =
-            widget.openMode == FloatingMenuPanelOpenMode.vertical
-            ? (dockOnPhysicalLeft
-                  ? _position.dx
-                  : (_position.dx + widget.handleWidth - containerWidth))
-            : _position.dx;
-
-        // تحديث جهة المقبض أفقياً (left/right) كما هو متوقع من الاستخدام الحالي.
-        // نستخدم الدوك عندما يكون مثبتًا لتجنب التذبذب أثناء أنيميشن الحجم.
-        if (_isDocked) {
-          widget.controller.updatePhysicalSide(
-            dockOnPhysicalLeft
-                ? FloatingMenuPanelPhysicalSide.left
-                : FloatingMenuPanelPhysicalSide.right,
-          );
-        } else {
-          final handleLeftX =
-              widget.openMode == FloatingMenuPanelOpenMode.vertical
-              ? _position.dx
-              : _position.dx +
-                    ((_dockSide == _DockSideDirectional.end)
-                        ? (_layoutPanelWidth * t)
-                        : 0);
-          final handleCenterX = handleLeftX + (widget.handleWidth / 2);
-          widget.controller.updatePhysicalSide(
-            handleCenterX <= (constraints.maxWidth / 2)
-                ? FloatingMenuPanelPhysicalSide.left
-                : FloatingMenuPanelPhysicalSide.right,
-          );
-        }
-
-        // تحديث جهة المقبض عموديًا (top/bottom) في الوضع العمودي.
-        if (widget.openMode == FloatingMenuPanelOpenMode.vertical) {
-          final handleCenterY = _position.dy + (widget.handleHeight / 2);
-          widget.controller.updateVerticalSide(
-            handleCenterY <= (constraints.maxHeight / 2)
-                ? FloatingMenuPanelPhysicalSide.top
-                : FloatingMenuPanelPhysicalSide.bottom,
-          );
-        }
-
-        if (_suppressPositionAnimationOnce) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            if (_suppressPositionAnimationOnce) {
-              setState(() => _suppressPositionAnimationOnce = false);
-            }
-          });
-        }
-
-        final children = <Widget>[];
-        final panelAndHandleInRow =
-            widget.openMode == FloatingMenuPanelOpenMode.side;
-
-        if (panelAndHandleInRow) {
-          final showPanelFirst = _dockSide == _DockSideDirectional.end;
-          if (showPanelFirst) {
-            children.add(panel);
-            children.add(handle);
-          } else {
-            children.add(handle);
-            children.add(panel);
-          }
-        } else {
-          // عمودي: يفتح أسفل المقبض، وإذا كان المقبض قريبًا من الأسفل يفتح للأعلى.
-          if (_verticalOpensUp) {
-            children.add(panel);
-            children.add(handle);
-          } else {
-            children.add(handle);
-            children.add(panel);
-          }
-        }
-
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            AnimatedPositioned(
-              // أثناء أنيميشن الفتح/الإغلاق، نقوم بتحديث الموضع في كل فريم لإبقاء
-              // اللوحة ملتصقة بالحافة. لو تركنا AnimatedPositioned يحرّك left/top
-              // في نفس الوقت سيظهر "اهتزاز" خصوصًا عند الدوك يمينًا.
-              duration:
-                  (_isDragging ||
-                      _openController.isAnimating ||
-                      _suppressPositionAnimationOnce)
-                  ? Duration.zero
-                  : widget.animationDuration,
-              curve: widget.animationCurve,
-              left: animatedLeft,
-              top: animatedTop,
-              child: GestureDetector(
-                onPanStart: (_) {
-                  setState(() {
-                    _isDragging = true;
-                    _isDocked = false;
-                    _lastDragGlobalPosition = null;
-                  });
-                },
-                onPanUpdate: (details) {
-                  setState(() {
-                    _lastDragGlobalPosition = details.globalPosition;
-                    _position = _clampPosition(
-                      context: context,
-                      constraints: constraints,
-                      position: _position + details.delta,
-                    );
-                  });
-                },
-                onPanEnd: (_) {
-                  setState(() => _isDragging = false);
-                  _snapToNearestEdge(
-                    context: context,
-                    constraints: constraints,
-                  );
-                },
-                child: panelAndHandleInRow
-                    ? Row(mainAxisSize: MainAxisSize.min, children: children)
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        // نثبت اتجاه الـ Flex هنا فقط حتى تكون start/end = يسار/يمين
-                        // بشكل فيزيائي، بدون التأثير على Directionality داخل الأبناء.
-                        textDirection: TextDirection.ltr,
-                        // عمودي: عند الدوك يسارًا نثبّت العناصر يسارًا، وعند الدوك
-                        // يمينًا نثبّتها يمينًا.
-                        crossAxisAlignment: dockOnPhysicalLeft
-                            ? CrossAxisAlignment.start
-                            : CrossAxisAlignment.end,
-                        children: children,
-                      ),
+                child: Container(color: widget.style.barrierColor),
               ),
             ),
-          ],
-        );
-      },
+          ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isRtl = Directionality.of(context) == TextDirection.rtl;
+
+            final padding = _resolvedPadding(context);
+            final maxInsideWidth =
+                (constraints.maxWidth - padding.left - padding.right).clamp(
+                  0.0,
+                  double.infinity,
+                );
+            final maxInsideHeight =
+                (constraints.maxHeight - padding.top - padding.bottom).clamp(
+                  0.0,
+                  double.infinity,
+                );
+
+            final maxPanelWidth =
+                widget.openMode == FloatingMenuPanelOpenMode.side
+                ? (maxInsideWidth - widget.handleWidth).clamp(
+                    0.0,
+                    double.infinity,
+                  )
+                : maxInsideWidth;
+            final maxPanelHeight =
+                widget.openMode == FloatingMenuPanelOpenMode.vertical
+                ? (maxInsideHeight - widget.handleHeight).clamp(
+                    0.0,
+                    double.infinity,
+                  )
+                : maxInsideHeight;
+
+            _layoutPanelWidth = widget.panelWidth.clamp(0.0, maxPanelWidth);
+            _layoutPanelHeight = widget.panelHeight.clamp(0.0, maxPanelHeight);
+
+            final isOpen = widget.controller.isOpen;
+            final t = _openCurve.value;
+
+            // عند الفتح العمودي، نقرر هل يفتح للأعلى أو للأسفل.
+            // مهم: نجعل _position.dy هو موضع المقبض (anchor) دائمًا.
+            // وعند الفتح للأعلى نحسب top ديناميكيًا بـ t حتى لا يتحرك المقبض أثناء الفتح/الإغلاق.
+            if (widget.openMode == FloatingMenuPanelOpenMode.vertical &&
+                isOpen != _lastIsOpen) {
+              if (isOpen) {
+                final handleCenterY = _position.dy + (widget.handleHeight / 2);
+                _verticalOpensUp = handleCenterY > (constraints.maxHeight / 2);
+              }
+              _lastIsOpen = isOpen;
+            }
+
+            if (_isDocked && !_isDragging) {
+              // أبقِ اللوحة ملتصقة بالحافة (start/end) حتى لو تغيّر عرضها عند الفتح/الإغلاق.
+              final width =
+                  widget.openMode == FloatingMenuPanelOpenMode.vertical
+                  ? widget.handleWidth
+                  : _currentWidth();
+              final leftX = padding.left;
+              final rightX = (constraints.maxWidth - width - padding.right)
+                  .clamp(leftX, double.infinity);
+
+              final dockOnPhysicalLeft = isRtl
+                  ? (_dockSide == _DockSideDirectional.end)
+                  : (_dockSide == _DockSideDirectional.start);
+
+              _position = Offset(
+                dockOnPhysicalLeft ? leftX : rightX,
+                _position.dy,
+              );
+            }
+
+            _position = _clampPosition(
+              context: context,
+              constraints: constraints,
+              position: _position,
+            );
+
+            final handle = _buildHandle(context);
+
+            final panel = (t == 0)
+                ? const SizedBox.shrink()
+                : ClipRect(
+                    child: SizedBox(
+                      key: const Key('floating_menu_panel_panel'),
+                      width: widget.openMode == FloatingMenuPanelOpenMode.side
+                          ? (_layoutPanelWidth * t)
+                          : _layoutPanelWidth,
+                      height:
+                          widget.openMode == FloatingMenuPanelOpenMode.vertical
+                          ? (_layoutPanelHeight * t)
+                          : _layoutPanelHeight,
+                      child: _buildPanelContainer(context),
+                    ),
+                  );
+
+            final dockOnPhysicalLeft = isRtl
+                ? (_dockSide == _DockSideDirectional.end)
+                : (_dockSide == _DockSideDirectional.start);
+
+            final containerWidth = _currentWidth();
+
+            final animatedTop =
+                (widget.openMode == FloatingMenuPanelOpenMode.vertical &&
+                    _verticalOpensUp)
+                ? (_position.dy - (_layoutPanelHeight * t))
+                : _position.dy;
+
+            // في الوضع العمودي: _position.dx يمثل موضع المقبض، ونحرّك left للكونتينر
+            // عند الدوك يمينًا حتى يبقى المقبض ثابتًا أثناء تغيّر عرض الكونتينر.
+            final animatedLeft =
+                widget.openMode == FloatingMenuPanelOpenMode.vertical
+                ? (dockOnPhysicalLeft
+                      ? _position.dx
+                      : (_position.dx + widget.handleWidth - containerWidth))
+                : _position.dx;
+
+            // تحديث جهة المقبض أفقياً (left/right) كما هو متوقع من الاستخدام الحالي.
+            // نستخدم الدوك عندما يكون مثبتًا لتجنب التذبذب أثناء أنيميشن الحجم.
+            if (_isDocked) {
+              widget.controller.updatePhysicalSide(
+                dockOnPhysicalLeft
+                    ? FloatingMenuPanelPhysicalSide.left
+                    : FloatingMenuPanelPhysicalSide.right,
+              );
+            } else {
+              final handleLeftX =
+                  widget.openMode == FloatingMenuPanelOpenMode.vertical
+                  ? _position.dx
+                  : _position.dx +
+                        ((_dockSide == _DockSideDirectional.end)
+                            ? (_layoutPanelWidth * t)
+                            : 0);
+              final handleCenterX = handleLeftX + (widget.handleWidth / 2);
+              widget.controller.updatePhysicalSide(
+                handleCenterX <= (constraints.maxWidth / 2)
+                    ? FloatingMenuPanelPhysicalSide.left
+                    : FloatingMenuPanelPhysicalSide.right,
+              );
+            }
+
+            // تحديث جهة المقبض عموديًا (top/bottom) في الوضع العمودي.
+            if (widget.openMode == FloatingMenuPanelOpenMode.vertical) {
+              final handleCenterY = _position.dy + (widget.handleHeight / 2);
+              widget.controller.updateVerticalSide(
+                handleCenterY <= (constraints.maxHeight / 2)
+                    ? FloatingMenuPanelPhysicalSide.top
+                    : FloatingMenuPanelPhysicalSide.bottom,
+              );
+            }
+
+            if (_suppressPositionAnimationOnce) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                if (_suppressPositionAnimationOnce) {
+                  setState(() => _suppressPositionAnimationOnce = false);
+                }
+              });
+            }
+
+            final children = <Widget>[];
+            final panelAndHandleInRow =
+                widget.openMode == FloatingMenuPanelOpenMode.side;
+
+            if (panelAndHandleInRow) {
+              final showPanelFirst = _dockSide == _DockSideDirectional.end;
+              if (showPanelFirst) {
+                children.add(panel);
+                children.add(handle);
+              } else {
+                children.add(handle);
+                children.add(panel);
+              }
+            } else {
+              // عمودي: يفتح أسفل المقبض، وإذا كان المقبض قريبًا من الأسفل يفتح للأعلى.
+              if (_verticalOpensUp) {
+                children.add(panel);
+                children.add(handle);
+              } else {
+                children.add(handle);
+                children.add(panel);
+              }
+            }
+
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                AnimatedPositioned(
+                  // أثناء أنيميشن الفتح/الإغلاق، نقوم بتحديث الموضع في كل فريم لإبقاء
+                  // اللوحة ملتصقة بالحافة. لو تركنا AnimatedPositioned يحرّك left/top
+                  // في نفس الوقت سيظهر "اهتزاز" خصوصًا عند الدوك يمينًا.
+                  duration:
+                      (_isDragging ||
+                          _openController.isAnimating ||
+                          _suppressPositionAnimationOnce)
+                      ? Duration.zero
+                      : widget.animationDuration,
+                  curve: widget.animationCurve,
+                  left: animatedLeft,
+                  top: animatedTop,
+                  child: GestureDetector(
+                    onPanStart: (_) {
+                      setState(() {
+                        _isDragging = true;
+                        _isDocked = false;
+                        _lastDragGlobalPosition = null;
+                      });
+                    },
+                    onPanUpdate: (details) {
+                      setState(() {
+                        _lastDragGlobalPosition = details.globalPosition;
+                        _position = _clampPosition(
+                          context: context,
+                          constraints: constraints,
+                          position: _position + details.delta,
+                        );
+                      });
+                    },
+                    onPanEnd: (_) {
+                      setState(() => _isDragging = false);
+                      _snapToNearestEdge(
+                        context: context,
+                        constraints: constraints,
+                      );
+                    },
+                    child: panelAndHandleInRow
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: children,
+                          )
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            // نثبت اتجاه الـ Flex هنا فقط حتى تكون start/end = يسار/يمين
+                            // بشكل فيزيائي، بدون التأثير على Directionality داخل الأبناء.
+                            textDirection: TextDirection.ltr,
+                            // عمودي: عند الدوك يسارًا نثبّت العناصر يسارًا، وعند الدوك
+                            // يمينًا نثبّتها يمينًا.
+                            crossAxisAlignment: dockOnPhysicalLeft
+                                ? CrossAxisAlignment.start
+                                : CrossAxisAlignment.end,
+                            children: children,
+                          ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
