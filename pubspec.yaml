@@ -1,0 +1,28 @@
+name: floating_menu_expendable
+description: "A new Flutter package project."
+version: 0.0.1
+homepage:
+
+environment:
+  sdk: ^3.10.4
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+platforms:
+  ? linux
+  ? windows
+  ? web
+  ? android
+  ? ios
+  ? macos
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
