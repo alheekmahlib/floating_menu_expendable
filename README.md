@@ -30,11 +30,19 @@ Use GitHub raw URLs for previews.
 
 Default behavior:
 
-![Preview](https://raw.githubusercontent.com/alheekmahlib/floating_menu_expendable/main/doc/preview.gif)
+<img
+  src="https://raw.githubusercontent.com/alheekmahlib/floating_menu_expendable/main/doc/preview.gif"
+  width="260"
+  alt="Preview"
+/>
 
 Expand-from-handle behavior:
 
-![Preview (Expand From Handle)](https://raw.githubusercontent.com/alheekmahlib/floating_menu_expendable/main/doc/preview2.gif)
+<img
+  src="https://raw.githubusercontent.com/alheekmahlib/floating_menu_expendable/main/doc/preview2.gif"
+  width="260"
+  alt="Preview (Expand From Handle)"
+/>
 
 ### Installation
 
