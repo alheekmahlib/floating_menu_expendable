@@ -29,7 +29,8 @@ class ExampleHome extends StatefulWidget {
 }
 
 class _ExampleHomeState extends State<ExampleHome> {
-  final FloatingMenuPanelController controller = FloatingMenuPanelController();
+  final FloatingMenuExpendableController controller =
+      FloatingMenuExpendableController();
 
   @override
   void dispose() {
@@ -120,15 +121,16 @@ class _ExampleHomeState extends State<ExampleHome> {
           ),
 
           // The actual package widget.
-          FloatingMenuPanel(
+          FloatingMenuExpendable(
             controller: controller,
             panelWidth: 340,
             panelHeight: 280,
             handleWidth: 46,
             handleHeight: 46,
             initialPosition: const Offset(16, 120),
-            openMode: FloatingMenuPanelOpenMode.vertical,
-            style: FloatingMenuPanelStyle(
+            openMode: FloatingMenuExpendableOpenMode.vertical,
+            expandPanelFromHandle: true,
+            style: FloatingMenuExpendableStyle(
               barrierColor: scheme.scrim.withValues(alpha: 0.35),
               barrierBlurSigmaX: 10,
               barrierBlurSigmaY: 10,
@@ -171,7 +173,7 @@ class _ExampleHomeState extends State<ExampleHome> {
 }
 
 class _MenuPanel extends StatelessWidget {
-  final FloatingMenuPanelController controller;
+  final FloatingMenuExpendableController controller;
 
   const _MenuPanel({required this.controller});
 
@@ -186,21 +188,11 @@ class _MenuPanel extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: const EdgeInsetsDirectional.fromSTEB(16.0, 8, 8.0, 0),
-              child: Row(
-                children: [
-                  Text(
-                    'Menu',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Close',
-                    onPressed: controller.close,
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ],
+              child: Text(
+                'Menu',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
           ),

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 part 'floating_menu_expendable_controller.dart';
 part 'floating_menu_expendable_style.dart';
 
-enum FloatingMenuPanelOpenMode {
+enum FloatingMenuExpendableOpenMode {
   /// يفتح اللوحة من الجانب (يمين/يسار) حسب الدوك و RTL/LTR.
   side,
 
@@ -17,11 +17,11 @@ enum FloatingMenuPanelOpenMode {
 
 enum _DockSideDirectional { start, end }
 
-class FloatingMenuPanel extends StatefulWidget {
-  final FloatingMenuPanelController controller;
+class FloatingMenuExpendable extends StatefulWidget {
+  final FloatingMenuExpendableController controller;
 
   /// Visual customization for the panel/handle/barrier.
-  final FloatingMenuPanelStyle style;
+  final FloatingMenuExpendableStyle style;
 
   /// العرض النهائي للمحتوى عند الفتح.
   final double panelWidth;
@@ -34,6 +34,16 @@ class FloatingMenuPanel extends StatefulWidget {
 
   /// زر/مقبض اللوحة الذي يبقى دائمًا ظاهرًا.
   final Widget handleChild;
+
+  /// When true, the panel expands as part of the handle container
+  /// (a single unified widget), instead of being a separate sibling widget.
+  ///
+  /// This is useful when you want the handle itself to "expand" into the panel.
+  final bool expandPanelFromHandle;
+
+  /// Optional widget to show inside the handle while the panel is open.
+  /// If null, a default close icon is used.
+  final Widget? handleOpenChild;
 
   /// حجم زر/مقبض اللوحة.
   final double handleHeight;
@@ -53,16 +63,18 @@ class FloatingMenuPanel extends StatefulWidget {
   final bool dockToStartInitially;
 
   /// طريقة فتح اللوحة: جانبي (افتراضي) أو عمودي.
-  final FloatingMenuPanelOpenMode openMode;
+  final FloatingMenuExpendableOpenMode openMode;
 
-  const FloatingMenuPanel({
+  const FloatingMenuExpendable({
     super.key,
     required this.controller,
     required this.panelWidth,
     required this.panelHeight,
     required this.panelChild,
     required this.handleChild,
-    this.style = const FloatingMenuPanelStyle(),
+    this.expandPanelFromHandle = false,
+    this.handleOpenChild,
+    this.style = const FloatingMenuExpendableStyle(),
     this.handleWidth = 52,
     this.handleHeight = 52,
     this.screenPadding = const EdgeInsetsDirectional.only(
@@ -75,14 +87,14 @@ class FloatingMenuPanel extends StatefulWidget {
     this.animationDuration = const Duration(milliseconds: 220),
     this.animationCurve = Curves.easeOut,
     this.dockToStartInitially = true,
-    this.openMode = FloatingMenuPanelOpenMode.side,
+    this.openMode = FloatingMenuExpendableOpenMode.side,
   });
 
   @override
-  State<FloatingMenuPanel> createState() => _FloatingMenuPanelState();
+  State<FloatingMenuExpendable> createState() => _FloatingMenuExpendableState();
 }
 
-class _FloatingMenuPanelState extends State<FloatingMenuPanel>
+class _FloatingMenuExpendableState extends State<FloatingMenuExpendable>
     with SingleTickerProviderStateMixin {
   late Offset _position;
   late _DockSideDirectional _dockSide;
@@ -138,7 +150,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
   }
 
   @override
-  void didUpdateWidget(covariant FloatingMenuPanel oldWidget) {
+  void didUpdateWidget(covariant FloatingMenuExpendable oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_onControllerChanged);
@@ -183,10 +195,17 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
 
   double _currentWidth() {
     final t = _openCurve.value;
-    if (widget.openMode == FloatingMenuPanelOpenMode.vertical) {
+    if (widget.openMode == FloatingMenuExpendableOpenMode.vertical) {
       // عمودي: عند الإغلاق لا يظهر إلا المقبض، لذا نسمح له بالتحرك أفقيًا
       // بحسب عرض المقبض فقط.
       // عند الفتح (t > 0) تصبح اللوحة مرئية بعرضها الكامل.
+      if (widget.expandPanelFromHandle) {
+        final targetWidth = (_layoutPanelWidth > widget.handleWidth)
+            ? _layoutPanelWidth
+            : widget.handleWidth;
+        return widget.handleWidth + ((targetWidth - widget.handleWidth) * t);
+      }
+
       if (t == 0) return widget.handleWidth;
       return (_layoutPanelWidth > widget.handleWidth)
           ? _layoutPanelWidth
@@ -199,7 +218,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
 
   double _currentHeight() {
     final t = _openCurve.value;
-    if (widget.openMode == FloatingMenuPanelOpenMode.vertical) {
+    if (widget.openMode == FloatingMenuExpendableOpenMode.vertical) {
       return widget.handleHeight + (_layoutPanelHeight * t);
     }
 
@@ -218,7 +237,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
     final padding = _resolvedPadding(context);
     // في الوضع العمودي نعامل position.dx كموضع المقبض، لذا نقيد X بعرض المقبض
     // حتى لو كان عرض اللوحة أكبر عند الفتح.
-    final width = widget.openMode == FloatingMenuPanelOpenMode.vertical
+    final width = widget.openMode == FloatingMenuExpendableOpenMode.vertical
         ? widget.handleWidth
         : _currentWidth();
     final height = _currentHeight();
@@ -237,7 +256,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
 
     // في الوضع العمودي عند الفتح للأعلى: نعامل position.dy كموضع المقبض (وليس أعلى الكونتينر)
     // لأن أعلى الكونتينر سيتحرك مع t للحفاظ على ثبات المقبض بصريًا.
-    if (widget.openMode == FloatingMenuPanelOpenMode.vertical &&
+    if (widget.openMode == FloatingMenuExpendableOpenMode.vertical &&
         _verticalOpensUp) {
       final t = _openCurve.value;
       final minHandleY = (padding.top + (_layoutPanelHeight * t)).clamp(
@@ -263,7 +282,8 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
     required BoxConstraints constraints,
   }) {
     final padding = _resolvedPadding(context);
-    final isVertical = widget.openMode == FloatingMenuPanelOpenMode.vertical;
+    final isVertical =
+        widget.openMode == FloatingMenuExpendableOpenMode.vertical;
     final widthForSnap = isVertical ? widget.handleWidth : _currentWidth();
 
     final leftEdgeX = padding.left;
@@ -322,6 +342,8 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
   }
 
   Widget _buildHandle(BuildContext context) {
+    final isOpen = widget.controller.isOpen;
+    final openChild = widget.handleOpenChild ?? const Icon(Icons.close_rounded);
     return SizedBox(
       key: const Key('floating_menu_panel_handle'),
       width: widget.handleWidth,
@@ -337,8 +359,144 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
           splashColor: widget.style.handleSplashColor,
           highlightColor: widget.style.handleHighlightColor,
           overlayColor: widget.style.handleOverlayColor,
-          child: Center(child: widget.handleChild),
+          child: Center(
+            child: AnimatedSwitcher(
+              duration: widget.animationDuration,
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeOut,
+              child: KeyedSubtree(
+                key: ValueKey<bool>(isOpen),
+                child: isOpen ? openChild : widget.handleChild,
+              ),
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildExpandFromHandleLayout({
+    required BuildContext context,
+    required double t,
+    required bool dockOnPhysicalLeft,
+    required bool panelAndHandleInRow,
+    required Widget handle,
+  }) {
+    final isOpen = widget.controller.isOpen;
+
+    Widget buildPanelSlice() {
+      // When closed, keep the slice fully collapsed so the unified container
+      // matches the handle size.
+      if (!isOpen && t == 0) return const SizedBox.shrink();
+
+      if (panelAndHandleInRow) {
+        final expandToRight = dockOnPhysicalLeft;
+        final alignment = expandToRight
+            ? Alignment.centerLeft
+            : Alignment.centerRight;
+
+        final targetHeight = (_layoutPanelHeight > widget.handleHeight)
+            ? _layoutPanelHeight
+            : widget.handleHeight;
+        final animatedHeight =
+            widget.handleHeight + ((targetHeight - widget.handleHeight) * t);
+        final animatedWidth = _layoutPanelWidth * t;
+
+        return SizedBox(
+          width: animatedWidth,
+          height: animatedHeight,
+          child: ClipRect(
+            child: Align(
+              alignment: alignment,
+              child: OverflowBox(
+                minWidth: _layoutPanelWidth,
+                maxWidth: _layoutPanelWidth,
+                minHeight: _layoutPanelHeight,
+                maxHeight: _layoutPanelHeight,
+                child: SizedBox(
+                  width: _layoutPanelWidth,
+                  height: _layoutPanelHeight,
+                  child: widget.panelChild,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      // Vertical: animate height AND width (so it doesn't jump to full width
+      // the moment t becomes > 0).
+      final targetWidth = (_layoutPanelWidth > widget.handleWidth)
+          ? _layoutPanelWidth
+          : widget.handleWidth;
+      final animatedWidth =
+          widget.handleWidth + ((targetWidth - widget.handleWidth) * t);
+      final animatedHeight = _layoutPanelHeight * t;
+
+      final expandDown = !_verticalOpensUp;
+      final alignment = expandDown
+          ? Alignment.topCenter
+          : Alignment.bottomCenter;
+
+      return SizedBox(
+        width: animatedWidth,
+        height: animatedHeight,
+        child: ClipRect(
+          child: Align(
+            alignment: alignment,
+            child: OverflowBox(
+              minWidth: _layoutPanelWidth,
+              maxWidth: _layoutPanelWidth,
+              minHeight: _layoutPanelHeight,
+              maxHeight: _layoutPanelHeight,
+              child: SizedBox(
+                width: _layoutPanelWidth,
+                height: _layoutPanelHeight,
+                child: widget.panelChild,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final panelSlice = buildPanelSlice();
+
+    final children = <Widget>[];
+    if (panelAndHandleInRow) {
+      final showPanelFirst = dockOnPhysicalLeft ? false : true;
+      if (showPanelFirst) {
+        children.add(panelSlice);
+        children.add(handle);
+      } else {
+        children.add(handle);
+        children.add(panelSlice);
+      }
+    } else {
+      if (_verticalOpensUp) {
+        children.add(panelSlice);
+        children.add(handle);
+      } else {
+        children.add(handle);
+        children.add(panelSlice);
+      }
+    }
+
+    return ClipRRect(
+      borderRadius: widget.style.panelBorderRadius,
+      clipBehavior: widget.style.panelClipBehavior,
+      child: DecoratedBox(
+        decoration: widget.style.panelDecoration ?? const BoxDecoration(),
+        child: panelAndHandleInRow
+            ? Row(mainAxisSize: MainAxisSize.min, children: children)
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                textDirection: TextDirection.ltr,
+                crossAxisAlignment: dockOnPhysicalLeft
+                    ? CrossAxisAlignment.start
+                    : CrossAxisAlignment.end,
+                children: children,
+              ),
       ),
     );
   }
@@ -391,14 +549,14 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
                 );
 
             final maxPanelWidth =
-                widget.openMode == FloatingMenuPanelOpenMode.side
+                widget.openMode == FloatingMenuExpendableOpenMode.side
                 ? (maxInsideWidth - widget.handleWidth).clamp(
                     0.0,
                     double.infinity,
                   )
                 : maxInsideWidth;
             final maxPanelHeight =
-                widget.openMode == FloatingMenuPanelOpenMode.vertical
+                widget.openMode == FloatingMenuExpendableOpenMode.vertical
                 ? (maxInsideHeight - widget.handleHeight).clamp(
                     0.0,
                     double.infinity,
@@ -414,7 +572,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
             // عند الفتح العمودي، نقرر هل يفتح للأعلى أو للأسفل.
             // مهم: نجعل _position.dy هو موضع المقبض (anchor) دائمًا.
             // وعند الفتح للأعلى نحسب top ديناميكيًا بـ t حتى لا يتحرك المقبض أثناء الفتح/الإغلاق.
-            if (widget.openMode == FloatingMenuPanelOpenMode.vertical &&
+            if (widget.openMode == FloatingMenuExpendableOpenMode.vertical &&
                 isOpen != _lastIsOpen) {
               if (isOpen) {
                 final handleCenterY = _position.dy + (widget.handleHeight / 2);
@@ -426,7 +584,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
             if (_isDocked && !_isDragging) {
               // أبقِ اللوحة ملتصقة بالحافة (start/end) حتى لو تغيّر عرضها عند الفتح/الإغلاق.
               final width =
-                  widget.openMode == FloatingMenuPanelOpenMode.vertical
+                  widget.openMode == FloatingMenuExpendableOpenMode.vertical
                   ? widget.handleWidth
                   : _currentWidth();
               final leftX = padding.left;
@@ -456,11 +614,13 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
                 : ClipRect(
                     child: SizedBox(
                       key: const Key('floating_menu_panel_panel'),
-                      width: widget.openMode == FloatingMenuPanelOpenMode.side
+                      width:
+                          widget.openMode == FloatingMenuExpendableOpenMode.side
                           ? (_layoutPanelWidth * t)
                           : _layoutPanelWidth,
                       height:
-                          widget.openMode == FloatingMenuPanelOpenMode.vertical
+                          widget.openMode ==
+                              FloatingMenuExpendableOpenMode.vertical
                           ? (_layoutPanelHeight * t)
                           : _layoutPanelHeight,
                       child: _buildPanelContainer(context),
@@ -474,7 +634,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
             final containerWidth = _currentWidth();
 
             final animatedTop =
-                (widget.openMode == FloatingMenuPanelOpenMode.vertical &&
+                (widget.openMode == FloatingMenuExpendableOpenMode.vertical &&
                     _verticalOpensUp)
                 ? (_position.dy - (_layoutPanelHeight * t))
                 : _position.dy;
@@ -482,7 +642,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
             // في الوضع العمودي: _position.dx يمثل موضع المقبض، ونحرّك left للكونتينر
             // عند الدوك يمينًا حتى يبقى المقبض ثابتًا أثناء تغيّر عرض الكونتينر.
             final animatedLeft =
-                widget.openMode == FloatingMenuPanelOpenMode.vertical
+                widget.openMode == FloatingMenuExpendableOpenMode.vertical
                 ? (dockOnPhysicalLeft
                       ? _position.dx
                       : (_position.dx + widget.handleWidth - containerWidth))
@@ -498,7 +658,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
               );
             } else {
               final handleLeftX =
-                  widget.openMode == FloatingMenuPanelOpenMode.vertical
+                  widget.openMode == FloatingMenuExpendableOpenMode.vertical
                   ? _position.dx
                   : _position.dx +
                         ((_dockSide == _DockSideDirectional.end)
@@ -513,7 +673,7 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
             }
 
             // تحديث جهة المقبض عموديًا (top/bottom) في الوضع العمودي.
-            if (widget.openMode == FloatingMenuPanelOpenMode.vertical) {
+            if (widget.openMode == FloatingMenuExpendableOpenMode.vertical) {
               final handleCenterY = _position.dy + (widget.handleHeight / 2);
               widget.controller.updateVerticalSide(
                 handleCenterY <= (constraints.maxHeight / 2)
@@ -533,25 +693,27 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
 
             final children = <Widget>[];
             final panelAndHandleInRow =
-                widget.openMode == FloatingMenuPanelOpenMode.side;
+                widget.openMode == FloatingMenuExpendableOpenMode.side;
 
-            if (panelAndHandleInRow) {
-              final showPanelFirst = _dockSide == _DockSideDirectional.end;
-              if (showPanelFirst) {
-                children.add(panel);
-                children.add(handle);
+            if (!widget.expandPanelFromHandle) {
+              if (panelAndHandleInRow) {
+                final showPanelFirst = _dockSide == _DockSideDirectional.end;
+                if (showPanelFirst) {
+                  children.add(panel);
+                  children.add(handle);
+                } else {
+                  children.add(handle);
+                  children.add(panel);
+                }
               } else {
-                children.add(handle);
-                children.add(panel);
-              }
-            } else {
-              // عمودي: يفتح أسفل المقبض، وإذا كان المقبض قريبًا من الأسفل يفتح للأعلى.
-              if (_verticalOpensUp) {
-                children.add(panel);
-                children.add(handle);
-              } else {
-                children.add(handle);
-                children.add(panel);
+                // عمودي: يفتح أسفل المقبض، وإذا كان المقبض قريبًا من الأسفل يفتح للأعلى.
+                if (_verticalOpensUp) {
+                  children.add(panel);
+                  children.add(handle);
+                } else {
+                  children.add(handle);
+                  children.add(panel);
+                }
               }
             }
 
@@ -597,22 +759,38 @@ class _FloatingMenuPanelState extends State<FloatingMenuPanel>
                       );
                     },
                     child: panelAndHandleInRow
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: children,
-                          )
-                        : Column(
-                            mainAxisSize: MainAxisSize.min,
-                            // نثبت اتجاه الـ Flex هنا فقط حتى تكون start/end = يسار/يمين
-                            // بشكل فيزيائي، بدون التأثير على Directionality داخل الأبناء.
-                            textDirection: TextDirection.ltr,
-                            // عمودي: عند الدوك يسارًا نثبّت العناصر يسارًا، وعند الدوك
-                            // يمينًا نثبّتها يمينًا.
-                            crossAxisAlignment: dockOnPhysicalLeft
-                                ? CrossAxisAlignment.start
-                                : CrossAxisAlignment.end,
-                            children: children,
-                          ),
+                        ? (widget.expandPanelFromHandle
+                              ? _buildExpandFromHandleLayout(
+                                  context: context,
+                                  t: t,
+                                  dockOnPhysicalLeft: dockOnPhysicalLeft,
+                                  panelAndHandleInRow: true,
+                                  handle: handle,
+                                )
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: children,
+                                ))
+                        : (widget.expandPanelFromHandle
+                              ? _buildExpandFromHandleLayout(
+                                  context: context,
+                                  t: t,
+                                  dockOnPhysicalLeft: dockOnPhysicalLeft,
+                                  panelAndHandleInRow: false,
+                                  handle: handle,
+                                )
+                              : Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  // نثبت اتجاه الـ Flex هنا فقط حتى تكون start/end = يسار/يمين
+                                  // بشكل فيزيائي، بدون التأثير على Directionality داخل الأبناء.
+                                  textDirection: TextDirection.ltr,
+                                  // عمودي: عند الدوك يسارًا نثبّت العناصر يسارًا، وعند الدوك
+                                  // يمينًا نثبّتها يمينًا.
+                                  crossAxisAlignment: dockOnPhysicalLeft
+                                      ? CrossAxisAlignment.start
+                                      : CrossAxisAlignment.end,
+                                  children: children,
+                                )),
                   ),
                 ),
               ],

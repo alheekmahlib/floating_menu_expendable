@@ -1,7 +1,7 @@
 part of 'floating_menu_expendable.dart';
 
 @immutable
-class FloatingMenuPanelStyle {
+class FloatingMenuExpendableStyle {
   /// Whether to show a blurred, colored barrier when the panel is open.
   final bool showBarrierWhenOpen;
 
@@ -23,7 +23,7 @@ class FloatingMenuPanelStyle {
   /// Clip behavior used for the panel.
   final Clip panelClipBehavior;
 
-  /// Optional decoration painted behind [FloatingMenuPanel.panelChild].
+  /// Optional decoration painted behind [FloatingMenuExpendable.panelChild].
   ///
   /// If null, no decoration is painted.
   final Decoration? panelDecoration;
@@ -48,7 +48,7 @@ class FloatingMenuPanelStyle {
   /// Optional InkWell overlay color for the handle.
   final WidgetStateProperty<Color?>? handleOverlayColor;
 
-  const FloatingMenuPanelStyle({
+  const FloatingMenuExpendableStyle({
     this.showBarrierWhenOpen = true,
     this.barrierDismissible = true,
     this.barrierBlurSigmaX = 5,
@@ -65,7 +65,7 @@ class FloatingMenuPanelStyle {
     this.handleOverlayColor,
   });
 
-  FloatingMenuPanelStyle copyWith({
+  FloatingMenuExpendableStyle copyWith({
     bool? showBarrierWhenOpen,
     bool? barrierDismissible,
     double? barrierBlurSigmaX,
@@ -81,7 +81,7 @@ class FloatingMenuPanelStyle {
     Color? handleHighlightColor,
     WidgetStateProperty<Color?>? handleOverlayColor,
   }) {
-    return FloatingMenuPanelStyle(
+    return FloatingMenuExpendableStyle(
       showBarrierWhenOpen: showBarrierWhenOpen ?? this.showBarrierWhenOpen,
       barrierDismissible: barrierDismissible ?? this.barrierDismissible,
       barrierBlurSigmaX: barrierBlurSigmaX ?? this.barrierBlurSigmaX,

@@ -12,15 +12,29 @@ Designed for:
 
 - Draggable and snaps to the nearest screen edge
 - Two open modes:
-	- `FloatingMenuPanelOpenMode.side`: panel opens horizontally next to the handle
-	- `FloatingMenuPanelOpenMode.vertical`: panel opens below the handle (or above if near bottom)
+	- `FloatingMenuExpendableOpenMode.side`: panel opens horizontally next to the handle
+	- `FloatingMenuExpendableOpenMode.vertical`: panel opens below the handle (or above if near bottom)
 - Background barrier with blur + color, dismissible on tap
-- UI customization via `FloatingMenuPanelStyle`
-- `FloatingMenuPanelController` for open/close/toggle and side tracking
+- UI customization via `FloatingMenuExpendableStyle`
+- `FloatingMenuExpendableController` for open/close/toggle and side tracking
+
+New:
+
+- Expand from the handle (unified handle + panel) using `expandPanelFromHandle`
+- Switch handle content while open using `handleOpenChild` (defaults to a close icon)
 
 ### Preview
 
-![Preview](doc/preview.gif)
+Note: pub.dev does not reliably render relative image paths.
+Use GitHub raw URLs for previews.
+
+Default behavior:
+
+![Preview](https://raw.githubusercontent.com/hawazenmahmood/floating_menu_expendable/main/doc/preview.gif)
+
+Expand-from-handle behavior:
+
+![Preview (Expand From Handle)](https://raw.githubusercontent.com/hawazenmahmood/floating_menu_expendable/main/doc/preview2.gif)
 
 ### Installation
 
@@ -35,11 +49,11 @@ import 'package:floating_menu_expendable/floating_menu_expendable.dart';
 ### Quick usage
 
 ```dart
-final controller = FloatingMenuPanelController();
+final controller = FloatingMenuExpendableController();
 
 Stack(
 	children: [
-		FloatingMenuPanel(
+		FloatingMenuExpendable(
 			controller: controller,
 			panelWidth: 320,
 			panelHeight: 240,
@@ -50,18 +64,36 @@ Stack(
 )
 ```
 
-### Customize the UI (Style)
+### Expand from handle (new)
 
-Use `FloatingMenuPanelStyle` to customize blur, barrier color, panel radius, and handle ink effects.
+If you want the panel to expand from the same handle (so it looks like one widget),
+enable `expandPanelFromHandle`.
 
 ```dart
-FloatingMenuPanel(
+FloatingMenuExpendable(
+	controller: controller,
+	panelWidth: 320,
+	panelHeight: 240,
+	expandPanelFromHandle: true,
+	// Optional: what to show inside the handle when open.
+	handleOpenChild: const Icon(Icons.close_rounded),
+	handleChild: const Icon(Icons.menu),
+	panelChild: const ColoredBox(color: Colors.white),
+)
+```
+
+### Customize the UI (Style)
+
+Use `FloatingMenuExpendableStyle` to customize blur, barrier color, panel radius, and handle ink effects.
+
+```dart
+FloatingMenuExpendable(
 	controller: controller,
 	panelWidth: 320,
 	panelHeight: 240,
 	handleChild: const Icon(Icons.menu),
 	panelChild: const ColoredBox(color: Colors.white),
-	style: const FloatingMenuPanelStyle(
+	style: const FloatingMenuExpendableStyle(
 		// Background barrier
 		showBarrierWhenOpen: true,
 		barrierDismissible: true,

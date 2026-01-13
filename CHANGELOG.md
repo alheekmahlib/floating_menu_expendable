@@ -1,3 +1,9 @@
+## 0.1.1
+
+- Add `expandPanelFromHandle` to expand the panel from the handle.
+- Add `handleOpenChild` to customize handle content while open.
+- Update README previews.
+
 ## 0.1.0
 
 - Initial public release.

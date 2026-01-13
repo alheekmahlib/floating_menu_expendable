@@ -10,20 +10,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(ExampleApp());
+  testWidgets('Example app renders floating menu', (WidgetTester tester) async {
+    await tester.pumpWidget(const ExampleApp());
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Floating Menu'), findsOneWidget);
+    expect(find.byKey(const Key('floating_menu_panel_handle')), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Tap the handle to open the panel.
+    await tester.tap(find.byKey(const Key('floating_menu_panel_handle')));
+    await tester.pumpAndSettle();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // When open, the handle switches to a close icon by default.
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('floating_menu_panel_handle')),
+        matching: find.byIcon(Icons.close_rounded),
+      ),
+      findsOneWidget,
+    );
   });
 }

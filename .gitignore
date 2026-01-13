@@ -1,0 +1,11 @@
+# Dart / Flutter
+.dart_tool/
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Platform-specific (kept under example/ typically)
+.DS_Store

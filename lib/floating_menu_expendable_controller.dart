@@ -2,7 +2,7 @@ part of 'floating_menu_expendable.dart';
 
 enum FloatingMenuPanelPhysicalSide { left, right, top, bottom }
 
-class FloatingMenuPanelController extends ChangeNotifier {
+class FloatingMenuExpendableController extends ChangeNotifier {
   bool _isOpen;
 
   /// جهة المقبض على الشاشة (يسار/يمين/فوق/تحت) ويمكن الاستماع لها.
@@ -15,7 +15,7 @@ class FloatingMenuPanelController extends ChangeNotifier {
   final ValueNotifier<FloatingMenuPanelPhysicalSide?> verticalSide =
       ValueNotifier<FloatingMenuPanelPhysicalSide?>(null);
 
-  FloatingMenuPanelController({bool initialIsOpen = false})
+  FloatingMenuExpendableController({bool initialIsOpen = false})
     : _isOpen = initialIsOpen;
 
   bool get isOpen => _isOpen;
