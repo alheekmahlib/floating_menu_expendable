@@ -45,6 +45,14 @@ Expand-from-handle behavior:
   alt="Preview (Expand From Handle)"
 />
 
+Anchored overlay behavior:
+
+<img
+	src="https://raw.githubusercontent.com/alheekmahlib/floating_menu_expendable/main/doc/preview3.gif"
+	width="260"
+	alt="Preview (Anchored Overlay)"
+/>
+
 ### Anchored overlay (new)
 
 If you want a widget (like a Grid/List item) to open a panel *without changing layout*,

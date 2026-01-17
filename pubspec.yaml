@@ -1,6 +1,6 @@
 name: floating_menu_expendable
 description: "A draggable floating handle that opens a customizable panel (side or vertical)."
-version: 0.1.1+1
+version: 1.0.0
 homepage: https://github.com/alheekmahlib/floating_menu_expendable
 repository: https://github.com/alheekmahlib/floating_menu_expendable
 issue_tracker: https://github.com/alheekmahlib/floating_menu_expendable/issues

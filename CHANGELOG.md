@@ -1,3 +1,7 @@
+## 1.0.0
+
+- Add `FloatingMenuAnchoredOverlay` to expand the panel from the handle.
+
 ## 0.1.1+1
 
 - Fix README.
