@@ -4,6 +4,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+export 'src/floating_menu_anchored_overlay.dart';
+
 part 'floating_menu_expendable_controller.dart';
 part 'floating_menu_expendable_style.dart';
 

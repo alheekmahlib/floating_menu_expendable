@@ -22,6 +22,7 @@ New:
 
 - Expand from the handle (unified handle + panel) using `expandPanelFromHandle`
 - Switch handle content while open using `handleOpenChild` (defaults to a close icon)
+- Anchored overlay for grid/list items using `FloatingMenuAnchoredOverlay` (does not affect layout)
 
 ### Preview
 
@@ -43,6 +44,54 @@ Expand-from-handle behavior:
   width="260"
   alt="Preview (Expand From Handle)"
 />
+
+### Anchored overlay (new)
+
+If you want a widget (like a Grid/List item) to open a panel *without changing layout*,
+use `FloatingMenuAnchoredOverlay`.
+
+- The panel is rendered in an `Overlay` and stays anchored to the child.
+- If you want the visual effect of "the item expands", set `expandFromAnchor: true`.
+- The rest of the UI is dimmed/blurred using a barrier.
+- When `closeOnScroll: true`, a scroll/pan gesture on the barrier will close the overlay.
+
+```dart
+final anchoredController = FloatingMenuAnchoredOverlayController();
+
+FloatingMenuAnchoredOverlay(
+	controller: anchoredController,
+	expandFromAnchor: true,
+	closeOnScroll: true,
+	panelBuilder: (context) {
+		return Material(
+			color: Colors.white,
+			borderRadius: const BorderRadius.all(Radius.circular(16)),
+			child: SizedBox(
+				width: 220,
+				child: Padding(
+					padding: const EdgeInsets.all(12),
+					child: Column(
+						mainAxisSize: MainAxisSize.min,
+						crossAxisAlignment: CrossAxisAlignment.start,
+						children: [
+							const Text('Actions'),
+							const SizedBox(height: 8),
+							TextButton(
+								onPressed: anchoredController.close,
+								child: const Text('Close'),
+							),
+						],
+					),
+				),
+			),
+		);
+	},
+	child: GestureDetector(
+		onTap: anchoredController.toggle,
+		child: const Card(child: SizedBox(height: 120)),
+	),
+)
+```
 
 ### Installation
 

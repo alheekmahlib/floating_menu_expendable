@@ -30,4 +30,41 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('Anchored overlay opens and closes on scroll', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const ExampleApp());
+    await tester.pumpAndSettle();
+
+    // Go to the Anchored tab.
+    await tester.tap(find.text('Anchored'));
+    await tester.pumpAndSettle();
+
+    // Tap the first grid item to open.
+    await tester.tap(find.byKey(const Key('grid_item_0')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('floating_menu_anchored_overlay_panel')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const Key('floating_menu_anchored_overlay_barrier')),
+      findsOneWidget,
+    );
+
+    // Scroll the grid; closeOnScroll should dismiss the overlay.
+    // Simulate a scroll gesture; closeOnScroll should dismiss the overlay.
+    await tester.drag(
+      find.byKey(const Key('floating_menu_anchored_overlay_barrier')),
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const Key('floating_menu_anchored_overlay_panel')),
+      findsNothing,
+    );
+  });
 }
