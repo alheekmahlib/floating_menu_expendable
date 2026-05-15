@@ -1,3 +1,11 @@
+## 1.1.0
+
+- Add `startDocked` parameter (default `true`) to respect `initialPosition` fully when set to `false`.
+- Add `onPositionChanged` callback to notify when the handle position changes (useful for persisting position via SharedPreferences).
+- Fix `initialPosition` being ignored on first build when `_isDocked` was always `true`.
+- Fix `didUpdateWidget` to handle `initialPosition` changes during widget rebuilds.
+- Update example app to demonstrate position persistence with `SharedPreferences` or `GetStorage`.
+
 ## 1.0.0
 
 - Add `FloatingMenuAnchoredOverlay` to expand the panel from the handle.

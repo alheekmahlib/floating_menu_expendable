@@ -64,8 +64,17 @@ class FloatingMenuExpendable extends StatefulWidget {
   /// start = يسار في LTR، يمين في RTL.
   final bool dockToStartInitially;
 
+  /// هل يبدأ مثبتًا (docked) على الحافة؟
+  /// عند `false` يحترم `initialPosition` بالكامل (X + Y).
+  /// عند `true` (الافتراضي) يتم تثبيت X على أقرب حافة في أول بناء.
+  final bool startDocked;
+
   /// طريقة فتح اللوحة: جانبي (افتراضي) أو عمودي.
   final FloatingMenuExpendableOpenMode openMode;
+
+  /// يُستدعى كلما تغيّر موضع المقبض (بعد السحب أو الدوكنغ).
+  /// استخدمه لحفظ الموضع في SharedPreferences أو أي تخزين.
+  final ValueChanged<Offset>? onPositionChanged;
 
   const FloatingMenuExpendable({
     super.key,
@@ -89,7 +98,9 @@ class FloatingMenuExpendable extends StatefulWidget {
     this.animationDuration = const Duration(milliseconds: 220),
     this.animationCurve = Curves.easeOut,
     this.dockToStartInitially = true,
+    this.startDocked = true,
     this.openMode = FloatingMenuExpendableOpenMode.side,
+    this.onPositionChanged,
   });
 
   @override
@@ -101,7 +112,7 @@ class _FloatingMenuExpendableState extends State<FloatingMenuExpendable>
   late Offset _position;
   late _DockSideDirectional _dockSide;
   bool _isDragging = false;
-  bool _isDocked = true;
+  late bool _isDocked;
 
   Offset? _lastDragGlobalPosition;
 
@@ -122,6 +133,7 @@ class _FloatingMenuExpendableState extends State<FloatingMenuExpendable>
   void initState() {
     super.initState();
     _position = widget.initialPosition;
+    _isDocked = widget.startDocked;
     _dockSide = widget.dockToStartInitially
         ? _DockSideDirectional.start
         : _DockSideDirectional.end;
@@ -167,6 +179,10 @@ class _FloatingMenuExpendableState extends State<FloatingMenuExpendable>
         parent: _openController,
         curve: widget.animationCurve,
       );
+    }
+
+    if (oldWidget.initialPosition != widget.initialPosition) {
+      _position = widget.initialPosition;
     }
   }
 
@@ -325,6 +341,7 @@ class _FloatingMenuExpendableState extends State<FloatingMenuExpendable>
       _dockSide = dockSide;
       _position = Offset(snappedX, _position.dy);
     });
+    widget.onPositionChanged?.call(_position);
   }
 
   _DockSideDirectional _dockSideFromPhysicalEdge({

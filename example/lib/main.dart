@@ -1,5 +1,6 @@
 import 'package:floating_menu_expendable/floating_menu_expendable.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const ExampleApp());
@@ -65,6 +66,7 @@ class _ExampleHomeState extends State<ExampleHome> {
           ),
         ),
         body: TabBarView(
+          physics: const NeverScrollableScrollPhysics(),
           children: [
             _FloatingDemo(scheme: scheme, controller: controller),
             _AnchoredDemo(scheme: scheme, controllers: _gridControllers),
@@ -75,14 +77,54 @@ class _ExampleHomeState extends State<ExampleHome> {
   }
 }
 
-class _FloatingDemo extends StatelessWidget {
+class _FloatingDemo extends StatefulWidget {
   final ColorScheme scheme;
   final FloatingMenuExpendableController controller;
 
   const _FloatingDemo({required this.scheme, required this.controller});
 
   @override
+  State<_FloatingDemo> createState() => _FloatingDemoState();
+}
+
+class _FloatingDemoState extends State<_FloatingDemo> {
+  static const _keyX = 'floating_menu_x';
+  static const _keyY = 'floating_menu_y';
+
+  Offset _position = const Offset(16, 120);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPosition();
+  }
+
+  Future<void> _loadPosition() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      setState(() {
+        _position = Offset(
+          prefs.getDouble(_keyX) ?? 16,
+          prefs.getDouble(_keyY) ?? 120,
+        );
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _savePosition(Offset offset) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(_keyX, offset.dx);
+      await prefs.setDouble(_keyY, offset.dy);
+    } catch (_) {}
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final scheme = widget.scheme;
+    final controller = widget.controller;
+
     return Stack(
       children: [
         // Simple, pleasant background.
@@ -140,7 +182,7 @@ class _FloatingDemo extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'Tip: Tap outside the panel to close.',
+                                'Tip: Tap outside the panel to close.\nPosition is saved between launches!',
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(color: scheme.onSurfaceVariant),
                               ),
@@ -163,45 +205,47 @@ class _FloatingDemo extends StatelessWidget {
           panelHeight: 280,
           handleWidth: 46,
           handleHeight: 46,
-          initialPosition: const Offset(16, 120),
-          openMode: FloatingMenuExpendableOpenMode.vertical,
-          expandPanelFromHandle: true,
-          style: FloatingMenuExpendableStyle(
-            barrierColor: scheme.scrim.withValues(alpha: 0.35),
-            barrierBlurSigmaX: 10,
-            barrierBlurSigmaY: 10,
-            panelBorderRadius: const BorderRadius.all(Radius.circular(8)),
-            panelDecoration: BoxDecoration(
-              color: scheme.surface.withValues(alpha: 0.85),
-              borderRadius: const BorderRadius.all(Radius.circular(8)),
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.60),
-              ),
-            ),
-            handleInkBorderRadius: BorderRadius.circular(8),
-          ),
-          handleChild: Container(
-            height: 46,
-            width: 46,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [scheme.primary, scheme.primaryContainer],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(8),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.18),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
+          initialPosition: _position,
+          startDocked: false,
+          onPositionChanged: _savePosition,
+            openMode: FloatingMenuExpendableOpenMode.vertical,
+            expandPanelFromHandle: true,
+            style: FloatingMenuExpendableStyle(
+              barrierColor: scheme.scrim.withValues(alpha: 0.35),
+              barrierBlurSigmaX: 10,
+              barrierBlurSigmaY: 10,
+              panelBorderRadius: const BorderRadius.all(Radius.circular(8)),
+              panelDecoration: BoxDecoration(
+                color: scheme.surface.withValues(alpha: 0.85),
+                borderRadius: const BorderRadius.all(Radius.circular(8)),
+                border: Border.all(
+                  color: scheme.outlineVariant.withValues(alpha: 0.60),
                 ),
-              ],
+              ),
+              handleInkBorderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.menu_rounded, color: scheme.onPrimary),
+            handleChild: Container(
+              height: 46,
+              width: 46,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [scheme.primary, scheme.primaryContainer],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.18),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Icon(Icons.menu_rounded, color: scheme.onPrimary),
+            ),
+            panelChild: _MenuPanel(controller: controller),
           ),
-          panelChild: _MenuPanel(controller: controller),
-        ),
       ],
     );
   }
