@@ -1,3 +1,8 @@
+## 1.1.1
+
+- Fix floating menu opening on the opposite side after restoring saved position.
+- Auto-detect dock side from saved position on first build, even when `startDocked` is `false`.
+
 ## 1.1.0
 
 - Add `startDocked` parameter (default `true`) to respect `initialPosition` fully when set to `false`.

@@ -126,6 +126,9 @@ class _FloatingMenuExpendableState extends State<FloatingMenuExpendable>
   // ناتجة عن تغيّر العرض/الارتفاع في نفس الفريم.
   bool _suppressPositionAnimationOnce = false;
 
+  /// هل لم يتم تحديد جهة الدوك من الموضع المحفوظ بعد؟
+  bool _needsDockSideFromPosition = true;
+
   bool _verticalOpensUp = false;
   bool _lastIsOpen = false;
 
@@ -183,6 +186,7 @@ class _FloatingMenuExpendableState extends State<FloatingMenuExpendable>
 
     if (oldWidget.initialPosition != widget.initialPosition) {
       _position = widget.initialPosition;
+      _needsDockSideFromPosition = true;
     }
   }
 
@@ -598,6 +602,21 @@ class _FloatingMenuExpendableState extends State<FloatingMenuExpendable>
                 _verticalOpensUp = handleCenterY > (constraints.maxHeight / 2);
               }
               _lastIsOpen = isOpen;
+            }
+
+            // في أول بناء، حدد جهة الدوك من الموضع المحفوظ بدل القيمة الافتراضية.
+            // هذا يضمن أن المقبض يفتح على الجهة الصحيحة بعد استعادة الموضع.
+            // مهم: يجب تحديد _dockSide بغض النظر عن _isDocked لأن _dockSide
+            // يُستخدم في حساب animatedLeft وترتيب panel/handle.
+            if (_needsDockSideFromPosition) {
+              _needsDockSideFromPosition = false;
+              final centerX = constraints.maxWidth / 2;
+              final direction = Directionality.of(context);
+              final snappedToLeft = _position.dx <= centerX;
+              _dockSide = _dockSideFromPhysicalEdge(
+                direction: direction,
+                snappedToLeft: snappedToLeft,
+              );
             }
 
             if (_isDocked && !_isDragging) {
